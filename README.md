@@ -1,2 +1,3 @@
-# crew_ai
-Final project for CS886
+# 'The Crew' Board Game Theory of Mind Project
+### Final project for CS886
+

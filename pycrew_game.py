@@ -3,9 +3,11 @@ from pycrew_rlagent import RLAgent
 from pycrew_randomagent import RandAgent
 from pycrew_humanagent import HumanAgent
 from pycrew_helper import plot
+from gym import Env
+from gym.spaces import Discrete, Box
 
-colors = ['Y', 'G', 'P', 'B'] #TODO: ADD BLACK CARDS
-TRICKS = [('Y', 3), ('G', 2), ('P', 4)]
+colors = [0,1,2,3] #TODO: ADD BLACK CARDS
+TRICKS = [(0, 3), (1, 2), (3, 4)]
 DECK = [(color, number) for color in colors for number in range(9)]
 random.shuffle(DECK)
 
@@ -26,12 +28,10 @@ class Game:
         self.player3 = last_agent
         self.current_table = []
         self.cards_in_play = []
-        
-        players = [self.player1, self.player2, self.player3]
         # get random start player
         self.start_idx = random.randint(0,2)
         # get tricks needed
-        self.tricks_left = [(players[i], trick) for i, trick in enumerate(TRICKS)]
+        self.tricks_left = [(i, trick) for i, trick in enumerate(TRICKS)]
         # deal out cards
         random.shuffle(DECK)
         for i in range(len(DECK)):
@@ -53,6 +53,9 @@ class Game:
         self.player3.deck = []
         # get random start player
         self.start_idx = random.randint(0,2)
+        # get tricks needed
+        players = [self.player1, self.player2, self.player3]
+        self.tricks_left = [(i, trick) for i, trick in enumerate(TRICKS)]
         # deal out cards
         random.shuffle(DECK)
         for i in range(len(DECK)):
@@ -93,10 +96,10 @@ class Game:
 
 
         winning_card = self.get_winner()
-        print("WINNER: PLAYER", winning_card[0].get_index)
+        print("WINNER: PLAYER", winning_card[0])
         self.tricks_won.append(winning_card)
         # update start index
-        self.start_idx = winning_card[0].get_index()
+        self.start_idx = winning_card[0]
         current_cards = [card[1] for card in self.cards_in_play]
         # check if any of the tricks were won
         for trick in self.tricks_left:
@@ -125,8 +128,8 @@ class Game:
 
     def _move(self, player, action):
         # add cards played to current table and cards_in_play 
-        self.current_table.append((player,action))
-        self.cards_in_play.append((player,action))
+        self.current_table.append((player.get_index(),action))
+        self.cards_in_play.append((player.get_index(),action))
         player.remove_card(action)
     
     def get_tricks(self):
@@ -144,7 +147,7 @@ def train():
     plot_mean_scores = []
     total_score = 0
     record = 0
-    agent = RandAgent(2)
+    agent = RLAgent(2)
 
     game = Game(last_agent=agent)
     while True:
@@ -169,22 +172,21 @@ def train():
         if done:
             print("GAME DONE! RESULT:", reward)
             # train long memory, plot result
-            # game.reset()
-            # agent.n_games += 1
-            # agent.train_long_memory()
+            game.reset()
+            agent.n_games += 1
+            agent.train_long_memory()
 
-            # if score > record:
-            #     record = score
-            #     agent.model.save()
+            if score > record:
+                record = score
+                agent.model.save()
 
-            # print('Game', agent.n_games, 'Score', score, 'Record:', record)
+            print('Game', agent.n_games, 'Score', score, 'Record:', record)
 
-            # plot_scores.append(score)
-            # total_score += score
-            # mean_score = total_score / agent.n_games
-            # plot_mean_scores.append(mean_score)
-            # plot(plot_scores, plot_mean_scores)
-            return
+            plot_scores.append(score)
+            total_score += score
+            mean_score = total_score / agent.n_games
+            plot_mean_scores.append(mean_score)
+            plot(plot_scores, plot_mean_scores)
 
 
 if __name__ == '__main__':

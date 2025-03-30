@@ -8,7 +8,9 @@ class HumanAgent(Agent):
         # get legal moves
         moves = self.get_legal_moves(game)
         # get user input for move
-
-        print("Your legal moves are: ", moves)
+        print("Currently on the table are:", game.cards_in_play)
+        print("The tricks left we want to win are: ", game.tricks_left)
+        print("Your legal moves are:", moves)
         move = int(input(f"Player {self.index + 1}, enter the index of the card you want to play (0-{len(moves) -1}): "))
-        return moves[move]
+        return self.deck.index(moves[move])
+    

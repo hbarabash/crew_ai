@@ -1,5 +1,5 @@
 import random
-
+import random      
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
 from pycrew_rlagent import RLAgent
@@ -9,6 +9,8 @@ from pycrew_helper import plot
 from gym import Env
 from gym.spaces import Discrete, Box
 import numpy as np
+
+from pycrew_ruleagent import RuleAgent
 colors = [0,1,2,3] #TODO: ADD BLACK CARDS
 TRICKS = [(0, 3), (1, 2), (3, 4)]
 DECK = [(color, number) for color in colors for number in range(9)]
@@ -23,7 +25,7 @@ random.shuffle(DECK)
 
 class AICrewGame(Env):
 
-    def __init__(self, agent1, agent2, last_agent=RandAgent(2)) -> None:
+    def __init__(self, agent1=None, agent2=None, last_agent=None) -> None:
         # 0 = human agent
         # 1 = random
         # 2 = rule-based
@@ -35,17 +37,18 @@ class AICrewGame(Env):
         self.score = 0
         self.player1 = agent1
         self.player2 = agent2
-        
-        # #TODO: add rule-based agent
-        # else:
-        #     self.player3 = RLAgent()
         self.player3 = last_agent
+
         self.current_table = []
         self.cards_in_play = []
         # get random start player
         self.start_idx = random.randint(0,2)
         # get tricks needed
-        self.tricks_left = [(i, trick) for i, trick in enumerate(TRICKS)]
+        colors = random.sample(range(4), 3)
+        numbers = [random.randint(0, 8) for _ in range(3)]
+        trick_cards = list(zip(colors, numbers))
+        self.tricks_left = [(i, trick_cards[i]) for i in range(3)]
+
         # deal out cards
         random.shuffle(DECK)
         for i in range(len(DECK)):
@@ -68,8 +71,10 @@ class AICrewGame(Env):
         # get random start player
         self.start_idx = random.randint(0,2)
         # get tricks needed
-        players = [self.player1, self.player2, self.player3]
-        self.tricks_left = [(i, trick) for i, trick in enumerate(TRICKS)]
+        colors = random.sample(range(4), 3)
+        numbers = [random.randint(0, 8) for _ in range(3)]
+        trick_cards = list(zip(colors, numbers))
+        self.tricks_left = [(i, trick_cards[i]) for i in range(3)]
         # deal out cards
         random.shuffle(DECK)
         for i in range(len(DECK)):
@@ -162,17 +167,17 @@ class AICrewGame(Env):
     def get_cards_in_play(self):
         return self.cards_in_play
     
-def test_model_performace(model_path="crew_ai_trained"):
+def test_model_performance(model_path="crew_ai_trained"):
     agent1 = RLAgent(index=0, model_path=model_path)
     agent2 = RLAgent(index=1, model_path=model_path)
     agent3 = RLAgent(index=2, model_path=model_path)
 
     # Run 100 games and track results
-    num_games = 100
+    num_games = 1000
     win_count = 0  # Track how many games the AI team wins
 
     for game_num in range(num_games):
-        env = AICrewGame(last_agent=agent3)  # Create new game instance
+        env = AICrewGame(agent1, agent2, last_agent=agent3)  # Create new game instance
         obs = env.reset()
         done = False
 
@@ -182,7 +187,7 @@ def test_model_performace(model_path="crew_ai_trained"):
             current_agent = [agent1, agent2, agent3][player_index]
 
             # AI chooses action
-            action = current_agent.get_model_action(obs)
+            action = current_agent.get_action(env, obs)
             
             # Step in environment
             obs, reward, done, _ = env.step(action)
@@ -200,11 +205,17 @@ def test_model_performace(model_path="crew_ai_trained"):
     print(f"Win Rate: {win_rate:.2f}%")
 
 if __name__ == '__main__':
-    # Training the AI agent
-    # env = DummyVecEnv([lambda: AICrewGame()])
+    #Training the AI agent
+
+    # agent1 = RLAgent(index=0, )
+    # agent2 = RLAgent(index=1,)
+    # agent3 = RLAgent(index=2,)
+    # num_envs = 3  # One per player
+    # env = DummyVecEnv([lambda: AICrewGame(agent1, agent2, agent3) for _ in range(num_envs)])
+
     # model = PPO("MlpPolicy", env, verbose=1)
-    # model.learn(total_timesteps=10000)
+    # model.learn(total_timesteps=100000)
     # model.save("crew_ai_trained")
     # Load trained AI model for all three agents
     
-    test_model_performace()
+    test_model_performance()

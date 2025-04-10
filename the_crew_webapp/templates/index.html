@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The Crew</title>
+    <style>
+        
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+        .card {
+            display: inline-block;
+            padding: 10px 16px;
+            margin: 6px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .card:hover { background: #def; }
+        .player-section, .table-section {
+            margin-bottom: 30px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            background-color: #f0f8ff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .win { background-color: #d4edda; }
+        .lose { background-color: #f8d7da; }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>The Crew</h1>
+    <div id="tricks" class="player-section"></div>
+    <div id="game"></div>
+
+    <!-- Add Reset Button -->
+    <div>
+        <button onclick="resetGame()">Reset Game</button>
+    </div>
+
+    <script>
+        const colorMap = {
+        0: "green",
+        1: "gold",
+        2: "hotpink",
+        3: "deepskyblue"
+        };
+        async function loadGame() {
+            const res = await fetch("/state");
+            const state = await res.json();
+            const { player_decks, current_player_deck, current_table, current_player, tricks_left, is_game_over, is_winner, done,} = state;
+            const container = document.getElementById("game");
+            const tricksContainer = document.getElementById("tricks");
+            container.innerHTML = "";
+
+            // Display win/loss message
+            const statusDiv = document.createElement("div");
+            statusDiv.className = "status";
+            if (is_game_over) {
+                if (is_winner) {
+                    statusDiv.innerHTML = "<strong>You Won!</strong> Congratulations!";
+                    statusDiv.classList.add("win");
+                } else {
+                    statusDiv.innerHTML = "<strong>You Lost!</strong> Better luck next time.";
+                    statusDiv.classList.add("lose");
+                }
+            } else {
+                statusDiv.innerHTML = `Tricks Left to Win: ${tricks_left.length}`;
+            }
+            container.appendChild(statusDiv);
+
+            // Display player sections
+            for (let i = 0; i < 3; i++) {
+                if (i === current_player) {
+                    const section = document.createElement("div");
+                    section.className = "player-section";
+                    const title = document.createElement("h2");
+                    title.innerText = `Player ${i}` + (i === current_player ? " (Your Turn)" : "");
+                    section.appendChild(title);
+
+                    player_decks[i].forEach(card => {
+                        const cardDiv = document.createElement("div");
+                        cardDiv.className = "card";
+                        cardDiv.style.color = colorMap[card[0]]
+                        cardDiv.innerText = card[1];
+
+                        if (i === current_player) {
+                            cardDiv.onclick = async () => {
+                                await fetch("/play", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ player_id: i, card })
+                                });
+                                loadGame();
+                            };
+                        }
+
+                        section.appendChild(cardDiv);
+                    });
+
+                    container.appendChild(section); }
+            }
+
+            // Add cards in play
+            const inPlay = document.createElement("div");
+            inPlay.className = "table-section";
+            const inPlayTitle = document.createElement("h2");
+            inPlayTitle.innerText = "Cards in Play";
+            inPlay.appendChild(inPlayTitle);
+
+            state.cards_in_play.forEach(([player, card]) => {
+                const cardDiv = document.createElement("div");
+                cardDiv.className = "card";
+                cardDiv.innerHTML = `
+                    <span style="color: black;">${player}:</span>
+                    <span style="color: ${colorMap[card[0]]};"> ${card[1]}</span>
+                `;
+                inPlay.appendChild(cardDiv);
+            });
+
+            container.appendChild(inPlay);
+
+            // Display cards on the table
+            const table = document.createElement("div");
+            table.className = "table-section";
+            const tableTitle = document.createElement("h2");
+            tableTitle.innerText = "Cards on the Table";
+            table.appendChild(tableTitle);
+
+            current_table.forEach(([player, card]) => {
+                const cardDiv = document.createElement("div");
+                cardDiv.className = "card";
+                cardDiv.style.color = colorMap[card[0]];
+                cardDiv.innerHTML = `
+                    <span style="color: black;">${player}:</span>
+                    <span style="color: ${colorMap[card[0]]};"> ${card[1]}</span>
+                `;
+                table.appendChild(cardDiv);
+            });
+
+            container.appendChild(table);
+
+            // Clear existing tricks content before updating
+            tricksContainer.innerHTML = "";
+
+            const tricksTitle = document.createElement("h2");
+            tricksTitle.innerText = "Tricks Left";
+            tricksContainer.appendChild(tricksTitle);
+
+            tricks_left.forEach(([player, card]) => {
+                const trickDiv = document.createElement("div");
+                trickDiv.className = "card";
+                trickDiv.innerHTML = `
+                    <span style="color: black;">Player ${player} must win:</span>
+                    <span style="color: ${colorMap[card[0]]};"> ${card[1]}</span>
+                `;
+                tricksContainer.appendChild(trickDiv);
+            });
+
+            // Autoplay AI: if it's AI's turn (player 2) and game is not over
+            if (!is_human_turn && current_player === 2 && !done && !is_game_over) {
+                setTimeout(() => autoplayAI(), 300);  // short delay to prevent recursion crash
+            }
+        }
+
+        async function autoplayAI() {
+            await fetch("/play", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ player_id: 2 })  // Target AI player (index 2)
+            });
+            await loadGame();
+        }
+
+        // Function to reset the game
+        async function resetGame() {
+            await fetch("/reset", {
+                method: "POST"
+            });
+            loadGame();
+        }
+
+        loadGame();
+    </script>
+</body>
+</html>

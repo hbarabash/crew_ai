@@ -1,16 +1,18 @@
 import random
 import random      
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
-from pycrew_rlagent import RLAgent
+# from stable_baselines3 import PPO
+# from stable_baselines3.common.vec_env import DummyVecEnv
+from pycrew_rlagent_ppo import RLAgent
+from pycrew_rlagent_dqn import RLdqnAgent
 from pycrew_randomagent import RandAgent
 from pycrew_humanagent import HumanAgent
-from pycrew_helper import plot
+# from pycrew_helper import plot
 from gym import Env
 from gym.spaces import Discrete, Box
 import numpy as np
-
 from pycrew_ruleagent import RuleAgent
+import pycrew_env
+
 colors = [0,1,2,3] #TODO: ADD BLACK CARDS
 TRICKS = [(0, 3), (1, 2), (3, 4)]
 DECK = [(color, number) for color in colors for number in range(9)]
@@ -167,10 +169,10 @@ class AICrewGame(Env):
     def get_cards_in_play(self):
         return self.cards_in_play
     
-def test_model_performance(model_path="crew_ai_trained"):
-    agent1 = RLAgent(index=0, model_path=model_path)
-    agent2 = RLAgent(index=1, model_path=model_path)
-    agent3 = RLAgent(index=2, model_path=model_path)
+def test_model_performance(model_path="runs/TheCrewAI-v0__dqn__1__1743998931/dqn.cleanrl_model"):
+    agent1 = RLdqnAgent(index=0, model_path=model_path)
+    agent2 = RLdqnAgent(index=1, model_path=model_path)
+    agent3 = RLdqnAgent(index=2, model_path=model_path)
 
     # Run 100 games and track results
     num_games = 1000

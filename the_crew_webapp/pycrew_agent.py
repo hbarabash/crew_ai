@@ -12,6 +12,7 @@ class Agent:
     def __init__(self, index):
         self.index = index
         self.deck = []
+        self.obs = None
 
     def encode_card(self, player_id, color, number):
         """Encode a (player_id, color, number) tuple into a one-hot vector."""
@@ -61,6 +62,7 @@ class Agent:
     
     def get_state(self, game):
         state = self.encode_observation(self.index, self.deck, game.current_table, game.tricks_left)
+        print("STATE", state)
         return np.array(state, dtype=int)
     
     def get_legal_moves(self, game):

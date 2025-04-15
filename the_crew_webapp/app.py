@@ -3,16 +3,17 @@ import os
 from pycrew_env import AICrewGame
 from pycrew_randomagent import RandAgent
 # from pycrew_rlagent_ppo import RLAgent
-from pycrew_humanagent import HumanAgent
+# from pycrew_humanagent import HumanAgent
 from pycrew_ruleagent import RuleAgent
 from pycrew_rlagent_dqn import RLdqnAgent 
 
 app = Flask(__name__)
 # model_path = "crew_ai_trained"
 # game = AICrewGame(last_agent=RuleAgent(2), tricks=[[0, 3], [1, 2], [3, 4]])  # Initialize the game
-game = AICrewGame(last_agent=RLdqnAgent(2), tricks=[[0, 3], [1, 2], [3, 4]])  # Initialize the game
+# game 2: [0, 1], [1, 3], [3, 2]
+game = AICrewGame(last_agent=RLdqnAgent(2), tricks=[[0, 1], [1, 2], [3, 5]])  # Initialize the game
 # obs = game.reset() # get initial obs for last agent
-
+human = False
 def serialize_game_state():
     return {
         "player_decks": game.get_player_decks(),
@@ -37,7 +38,7 @@ def state():
     if game.done():
         jsonify(serialize_game_state())
     # check if not human player
-    if game.get_current_player() == 2:
+    if not human and game.get_current_player() == 2:
         print("LAST PLAYER")
         agent = game.player3
         obs = game.obs
@@ -81,30 +82,10 @@ def play():
             2: game.player3
         }[current_player]
 
-        # If it's a human agent, wait for card input
-        if isinstance(agent, HumanAgent):
-            if card is None:
-                return jsonify({
-                    "status": "awaiting_input",
-                    **serialize_game_state()
-                })
+        action_idx = player_deck.index(card)
+        obs, reward, done, _, _ = game.step(action_idx)
 
-            # Validate card
-            player_deck = game.get_player_decks()[player_id]
-            if card not in player_deck:
-                return jsonify({
-                    "status": "error",
-                    "message": "Card not in player's hand"
-                })
-
-            action_idx = player_deck.index(card)
-            obs, reward, done, _, _ = game.step(action_idx)
-
-        else:
-            # AI agent — automatically play legal move
-            action = agent.get_action(obs, game)
-            obs, reward, done, _, _ = game.step(action)
-
+        
         return jsonify({
             "status": "success",
             "reward": reward,

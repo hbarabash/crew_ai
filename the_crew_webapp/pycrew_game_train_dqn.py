@@ -21,22 +21,22 @@ from pycrew_rlagent_dqn import RLdqnAgent
 # entry_point='pycrew_env:AICrewGame',
 # )
 
-def test_model_performance(model_path="runs/TheCrewAI-v0__dqn__1__1744004106/dqn.cleanrl_model"):
-    # agent1 = RLdqnAgent(index=0)
-    # agent2 = RLdqnAgent(index=1)
-    # agent3 = RLdqnAgent(index=2)
-    # agent1 = RandAgent(index=0)
-    # agent2 = RandAgent(index=1)
-    # agent3 = RandAgent(index=2)
-    agent1 = RuleAgent(index=0)
-    agent2 = RuleAgent(index=1)
-    agent3 = RuleAgent(index=2)
+def test_model_performance(model_path= "runs/TheCrewAI-v0__dqn__1__1744315938/dqn.cleanrl_model"): #TheCrewAI-v0__dqn__1__1744315355/dqn.cleanrl_model"): #"runs/TheCrewAI-v0__dqn__1__1744004106/dqn.cleanrl_model"):
+    # agent1 = RLdqnAgent(index=0, model_path=model_path)
+    # agent2 = RLdqnAgent(index=1, model_path=model_path)
+    # agent3 = RLdqnAgent(index=2, model_path=model_path)
+    agent1 = RandAgent(index=0)
+    agent2 = RandAgent(index=1)
+    agent3 = RandAgent(index=2)
+    # agent1 = RuleAgent(index=0)
+    # agent2 = RuleAgent(index=1)
+    # agent3 = RuleAgent(index=2)
 
     num_games = 10000
     win_count = 0  # Track how many games the AI team wins
 
     for game_num in range(num_games):
-        env = AICrewGame(agent1, agent2, last_agent=agent3)  # Create new game instance
+        env = AICrewGame(agent1, agent2, last_agent=agent3, tricks=[[0, 1], [1, 3], [3, 2]])  # Create new game instance
         obs = env.reset()
         print(f"Game {game_num + 1} started! Initial Observation: {obs}")
         done = False
@@ -72,8 +72,8 @@ if __name__ == '__main__':
     # # Optional: ensure runs/ folder exists to store models
     os.makedirs("runs", exist_ok=True)
 
-    # # Train the model using CleanRL's Rainbow DQN implementation
-    # # You can add more flags (like --track or --capture-video) if needed
+    # Train the model using CleanRL's Rainbow DQN implementation
+    # You can add more flags (like --track or --capture-video) if needed
     # subprocess.run([
     #     "python3", "dqn.py",
     #     "--env-id", "TheCrewAI-v0",

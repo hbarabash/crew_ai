@@ -6,17 +6,22 @@ from pycrew_rlagent_ppo import RLAgent
 from pycrew_randomagent import RandAgent
 from pycrew_humanagent import HumanAgent
 # from pycrew_helper import plot
+# from gym import Env
+# from gym.spaces import Discrete, Box
 from gymnasium import Env
 from gymnasium.spaces import Discrete, Box
 import numpy as np
 from pycrew_ruleagent import RuleAgent
+# from sb3_contrib import MaskablePPO
+from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv
 
-from gymnasium.envs.registration import register
+# from gymnasium.envs.registration import register
 
-register(
-    id='TheCrewAI-v0',
-    entry_point='pycrew_env:AICrewGame',
-)
+# register(
+#     id='TheCrewAI-v0',
+#     entry_point='pycrew_env:AICrewGame',
+# )
 
 
 colors = [0,1,2,3] #TODO: ADD BLACK CARDS
@@ -31,14 +36,14 @@ MAX_TRICKS = 3
 MAX_CARDS = 12
 random.shuffle(DECK)
 
-class AICrewGame(Env):
+class AICrewGamePPO(Env):
 
     def __init__(self, agent1=HumanAgent(0), agent2=HumanAgent(1), last_agent=HumanAgent(2), tricks=None) -> None:
         # 0 = human agent
         # 1 = random
         # 2 = rule-based
         # 3 = RL agent (for agent_type)
-        super(AICrewGame, self).__init__()
+        super(AICrewGamePPO, self).__init__()
         self.action_space = Discrete(MAX_CARDS)
         obs_size = (NUM_PLAYERS + NUM_COLORS + NUM_NUMBERS) * (MAX_CARDS + MAX_HISTORY + MAX_TRICKS + MAX_TRICKS)
         self.observation_space = Box(low=0, high=1, shape=(obs_size,), dtype=np.float32)
@@ -72,7 +77,6 @@ class AICrewGame(Env):
             else:
                 self.player3.deck.append(DECK[i])
         self.tricks_won = []
-        self.obs = self.player3.encode_observation(2, self.player3.deck, self.current_table, self.tricks_left,self.cards_in_play), dict()
 
     def reset(self, seed=None, options=None):
         # init game state
@@ -103,7 +107,7 @@ class AICrewGame(Env):
             else:
                 self.player3.deck.append(DECK[i])
         players = [self.player1, self.player2, self.player3]
-        return players[self.start_idx].encode_observation(self.start_idx, players[self.start_idx].deck, self.current_table, self.tricks_left, self.cards_in_play), dict()
+        return players[self.start_idx].encode_observation(self.start_idx, players[self.start_idx].deck, self.current_table, self.tricks_left, self.cards_in_play), {}
 
     def get_winner(self):
         current_color = self.cards_in_play[0][1][0] # color of first card played
@@ -146,9 +150,7 @@ class AICrewGame(Env):
         if action not in current_player.get_legal_actions(self):
             obs = current_player.encode_observation(current_player.index, current_player.deck, self.current_table, self.tricks_left, self.cards_in_play)
             print("Illegal move - out of cards")
-            if current_player == 2:
-                self.obs = obs
-            return obs, 0, True, False,{}
+            return obs, 0, False, False, {}
 
         # update decks
         # add cards played to current table and cards_in_play
@@ -190,7 +192,7 @@ class AICrewGame(Env):
                 reward = 1
                 # obs doesn't matter, done
                 obs = current_player.encode_observation(current_player.index, current_player.deck, self.current_table, self.tricks_left, self.cards_in_play)
-                return obs, reward, done, False,{}
+                return obs, reward, done, False, {}
             
             elif len(self.player1.deck) == 0:
                 print("Ran out of cards")
@@ -198,15 +200,13 @@ class AICrewGame(Env):
                 reward = 0
                 # obs doesn't matter, done
                 obs = current_player.encode_observation(current_player.index, current_player.deck, self.current_table, self.tricks_left, self.cards_in_play)
-                return obs, reward, done, False,{}
+                return obs, reward, done, False, {}
                 
             # clear cards in play
             self.cards_in_play = []
 
         obs = next_player.encode_observation(next_player.index, next_player.deck, self.current_table, self.tricks_left, self.cards_in_play)
         # obs = current_player.encode_observation(current_player.index, current_player.deck, self.current_table, self.tricks_left, self.cards_in_play)
-        if current_player == 2:
-                self.obs = obs
         return obs, reward, done, False, {}
     
     def get_tricks(self):
@@ -250,4 +250,57 @@ class AICrewGame(Env):
     
     def is_winner(self):
         return (self.done() and (not self.is_game_over()))
-    
+
+
+def test_model_performance(model_path= "crew_ai_trained"):
+    agent1 = RLAgent(index=0, model_path=model_path)
+    agent2 = RLAgent(index=1, model_path=model_path)
+    agent3 = RLAgent(index=2, model_path=model_path)
+    # agent1 = RandAgent(index=0)
+    # agent2 = RandAgent(index=1)
+    # agent3 = RandAgent(index=2)
+    # agent1 = RuleAgent(index=0)
+    # agent2 = RuleAgent(index=1)
+    # agent3 = RuleAgent(index=2)
+
+    num_games = 10000
+    win_count = 0  # Track how many games the AI team wins
+
+    for game_num in range(num_games):
+        env = AICrewGamePPO(agent1, agent2, last_agent=agent3)  # Create new game instance
+        obs = env.reset()[0]
+        print(f"Game {game_num + 1} started! Initial Observation: {obs}")
+        done = False
+
+        while not done:
+            player_index = (env.start_idx + len(env.cards_in_play)) % 3
+            current_agent = [agent1, agent2, agent3][player_index]
+            action = current_agent.get_action(env, obs)
+            print(f"Agent {current_agent.index} took action: {action}")
+
+            # Step in environment
+            obs, reward, done, _, _ = env.step(action)
+            # print(f"Observation: {obs}, Reward: {reward}, Done: {done}")
+
+        if reward == 1:
+            win_count += 1
+            print(f"Game {game_num + 1} finished! ✅ WIN")
+        else:
+            print(f"Game {game_num + 1} finished! ❌ LOSS")
+
+    win_rate = (win_count / num_games) * 100
+    print("\n🏆 FINAL RESULTS AFTER 100 GAMES 🏆")
+    print(f"Total Wins: {win_count} / {num_games}")
+    print(f"Win Rate: {win_rate:.2f}%")
+
+if __name__ == '__main__':
+    agent1 = DummyAgent(index=0, )
+    agent2 = DummyAgent(index=1,)
+    agent3 = DummyAgent(index=2,)
+    num_envs = 3  # One per player
+    env = DummyVecEnv([lambda: AICrewGamePPO(agent1, agent2, agent3) for _ in range(num_envs)])
+
+    model = PPO("MlpPolicy", env, verbose=1)
+    model.learn(total_timesteps=100000)
+    model.save("crew_ai_trained")
+    # test_model_performance()

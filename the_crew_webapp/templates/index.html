@@ -171,20 +171,20 @@
                 tricksContainer.appendChild(trickDiv);
             });
 
-            // Autoplay AI: if it's AI's turn (player 2) and game is not over
-            if (!is_human_turn && current_player === 2 && !done && !is_game_over) {
-                setTimeout(() => autoplayAI(), 300);  // short delay to prevent recursion crash
-            }
+            // // Autoplay AI: if it's AI's turn (player 2) and game is not over
+            // if (!is_human_turn && current_player === 2 && !done && !is_game_over) {
+            //     setTimeout(() => autoplayAI(), 300);  // short delay to prevent recursion crash
+            // }
         }
 
-        async function autoplayAI() {
-            await fetch("/play", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ player_id: 2 })  // Target AI player (index 2)
-            });
-            await loadGame();
-        }
+        // async function autoplayAI() {
+        //     await fetch("/play", {
+        //         method: "POST",
+        //         headers: { "Content-Type": "application/json" },
+        //         body: JSON.stringify({ player_id: 2 })  // Target AI player (index 2)
+        //     });
+        //     await loadGame();
+        // }
 
         // Function to reset the game
         async function resetGame() {

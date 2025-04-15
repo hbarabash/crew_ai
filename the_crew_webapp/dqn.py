@@ -1,4 +1,8 @@
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/dqn/#dqnpy
+"""
+This algorithm is taken from CleanRL (https://docs.cleanrl.dev/rl-algorithms/dqn/#dqnpy), only minor action-masking
+modifications have been made.
+"""
 import os
 import random
 import time
@@ -97,7 +101,7 @@ class QNetwork(nn.Module):
             nn.ReLU(),
             nn.Linear(120, 84),
             nn.ReLU(),
-            nn.Linear(84, env.action_space.n),
+            nn.Linear(84, env.action_space.n), #env.action_space.n),
         )
 
     def forward(self, x):

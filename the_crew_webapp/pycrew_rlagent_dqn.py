@@ -6,7 +6,7 @@ import gymnasium as gym
 
 class RLdqnAgent(Agent):
 
-    def __init__(self, index, model_path="runs/TheCrewAI-v0__dqn__1__1744224994/dqn.cleanrl_model", env_id="TheCrewAI-v0", device="cpu"):
+    def __init__(self, index, model_path="runs/TheCrewAI-v0__dqn__1__1744315938/dqn.cleanrl_model", env_id="TheCrewAI-v0", device="cpu"):
         super().__init__(index)
         self.device = device
         self.env = gym.make(env_id)  # Needed for obs space

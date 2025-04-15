@@ -25,14 +25,14 @@ MAX_TRICKS = 3
 MAX_CARDS = 12
 random.shuffle(DECK)
 
-class AICrewGame(Env):
+class AICrewGamePPO(Env):
 
     def __init__(self, agent1=None, agent2=None, last_agent=None) -> None:
         # 0 = human agent
         # 1 = random
         # 2 = rule-based
         # 3 = RL agent (for agent_type)
-        super(AICrewGame, self).__init__()
+        super(AICrewGamePPO, self).__init__()
         self.action_space = Discrete(MAX_CARDS)
         obs_size = (NUM_PLAYERS + NUM_COLORS + NUM_NUMBERS) * (MAX_CARDS + MAX_HISTORY + MAX_TRICKS)
         self.observation_space = Box(low=0, high=1, shape=(obs_size,), dtype=np.float32)
@@ -179,7 +179,7 @@ def test_model_performance(model_path="runs/TheCrewAI-v0__dqn__1__1743998931/dqn
     win_count = 0  # Track how many games the AI team wins
 
     for game_num in range(num_games):
-        env = AICrewGame(agent1, agent2, last_agent=agent3)  # Create new game instance
+        env = AICrewGamePPO(agent1, agent2, last_agent=agent3)  # Create new game instance
         obs = env.reset()
         done = False
 

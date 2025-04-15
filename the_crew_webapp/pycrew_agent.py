@@ -42,7 +42,7 @@ class Agent:
 
         return np.concatenate(encoded_tricks)  # Flatten into a single vector
     
-    def encode_observation(self, player_id, hand, history, tricks):
+    def encode_observation(self, player_id, hand, history, tricks, current):
         """Encodes the observation for the AI player."""
         # Encode player's hand (fixed size MAX_CARDS, zero-pad if needed)
         encoded_hand = [self.encode_card(player_id, c, n) for (c, n) in hand]
@@ -56,9 +56,12 @@ class Agent:
         
         # Encode tricks left to be won
         encoded_tricks = self.encode_tricks(tricks)
+
+        # encode current cards in play (same as tricks)
+        encoded_current = self.encode_tricks(current)
         
         # Flatten and return
-        return np.concatenate(encoded_hand + encoded_history + [encoded_tricks])
+        return np.concatenate(encoded_hand + encoded_history + [encoded_tricks] + [encoded_current])
     
     def get_state(self, game):
         state = self.encode_observation(self.index, self.deck, game.current_table, game.tricks_left)
